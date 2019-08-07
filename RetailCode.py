@@ -22,7 +22,7 @@ import json
 # CREATE RECIPES DATASET
 
 # import recipes. (https://www.kaggle.com/hugodarwood/epirecipes)
-with open('C:/Users/daniel.lopez/Documents/GitHub/retail/full_format_recipes.json') as json_data:
+with open('C:/Users/Daniel/Desktop/Master/Term 3/Retail/full_format_recipes.json') as json_data:
     new_recipes = json.load(json_data)
     json_data.close()  
 
@@ -44,11 +44,12 @@ for i in range(0,len(new_recipes)):
         remove = '|'.join(words_to_eliminate)
         recipe = [re.compile(r'\b('+remove+r')\b', flags=re.IGNORECASE).sub("",w) for w in recipe]
         recipe = [re.sub(r'\([^)]*\)', "", w) for w in recipe]
-        recipe = [re.sub(r'[\[\],\')Â¿?^*"(\.;$%_–:+<>⁄•—,%§––¾½¼]', "", w) for w in recipe]
+        recipe = [re.sub(r'[\[\],\')Â¿?^*"(\.;$%_–:+<>⁄•—'',%§––¾½¼]', "", w) for w in recipe]
         recipe = [re.sub(r'[0-9/,-]', "", w) for w in recipe]
         recipe = [re.sub(r'^\s+', "", w) for w in recipe]
         recipe = [re.sub(r'\s+', " ", w) for w in recipe]
         recipe = [x.lower() for x in recipe]
+        recipe = filter(None, recipe)
         recipe_list.append(recipe)
         directions_list.append(new_recipes[i]['directions'])
     except:
@@ -80,7 +81,7 @@ list_prods_in_recipes = [x for x in list_prods_in_recipes if len(x.strip())]
 display(len(list_prods_in_recipes))
 
 # Load products sold by the retailer
-products = pd.read_csv("C:/Users/daniel.lopez/Documents/GitHub/retail/products.csv")
+products = pd.read_csv("C:/Users/Daniel/Desktop/Master/Term 3/Retail/products.csv")
 
 # Transoform variables into lower case
 
@@ -182,12 +183,13 @@ def doc_vectors(word_dict,  doc_df):
     
     doc_w2vec = dict()
     
+   
     for doc in doc_df.iterrows():
         
         doc_vector = list()
         for term in doc[1]['Terms']:
             doc_vector.append(word_dict[term])
-
+    
         doc_w2vec[doc[1]['Key']] = np.average(doc_vector, axis=0)
     
     return doc_w2vec
@@ -208,10 +210,33 @@ there are available, in both of the recipes and products sold by the vendor
 # =============================================================================
 
 # create recipes dataframe
-recipes_df = pd.DataFrame({'Key':range(1, len(recipe_list)+1,1), 'ingredients':recipe_list,
-                           'directions':directions_list})
+recipes_df = pd.DataFrame({'Key':range(1, len(recipe_list)+1,1), 'ingredients':recipe_list})
+#                                         ,'directions':directions_list}) 
     
 recipes_df = recipes_df.rename(index=str, columns={"ingredients": "Terms"})
+
+# Remove empty terms
+
+recipes_df = recipes_df[recipes_df.astype(str)['Terms'] != '[]']
+
+# Remove all rows which list contain '' term
+#recipes_df.drop(recipes_df[recipes_df['Key'] == 3680].index, inplace=True)
+#
+#recipes_df.drop(recipes_df[recipes_df['Key'] == 5210].index, inplace=True)
+#
+#recipes_df.drop(recipes_df[recipes_df['Key'] == 10797].index, inplace=True)
+
+
+# To detect where code breaks
+# for doc in recipes_df.iterrows():
+#        
+#        doc_vector = list()
+#        a = list()
+#        for term in doc[1]['Terms']:
+#            
+#            a.append(term)
+#            doc_vector.append(product_vectors[term])
+#            print(recipes_df['Key'],term)
 
 ## Separate all words with a ' ' space
 #recipes_df['Terms']  = recipes_df['ingredients'].str.replace('\W', ' ')
@@ -220,13 +245,7 @@ recipes_df = recipes_df.rename(index=str, columns={"ingredients": "Terms"})
 #recipes_df['Terms'] = recipes_df['Terms'].str.split()
 #
 recipe_vectors = doc_vectors(product_vectors, recipes_df)
-#
-#for i in recipes_df['ingredients']:
-#    if i == 'cubes':
-#        print('aki')
-#
-#
-#del product_vectors['']
+
 #
 # =============================================================================
 
