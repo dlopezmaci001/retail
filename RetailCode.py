@@ -49,7 +49,7 @@ for i in range(0,len(new_recipes)):
         recipe = [re.sub(r'^\s+', "", w) for w in recipe]
         recipe = [re.sub(r'\s+', " ", w) for w in recipe]
         recipe = [x.lower() for x in recipe]
-        recipe = filter(None, recipe)
+        recipe = list(filter(None, recipe))
         recipe_list.append(recipe)
         directions_list.append(new_recipes[i]['directions'])
     except:
@@ -183,16 +183,16 @@ def doc_vectors(word_dict,  doc_df):
     
     doc_w2vec = dict()
     
-   
     for doc in doc_df.iterrows():
         
         doc_vector = list()
         for term in doc[1]['Terms']:
             doc_vector.append(word_dict[term])
-    
+
         doc_w2vec[doc[1]['Key']] = np.average(doc_vector, axis=0)
     
     return doc_w2vec
+         
 
 # Generate product vectors.
 # Rename the columns of the product table 
@@ -210,8 +210,8 @@ there are available, in both of the recipes and products sold by the vendor
 # =============================================================================
 
 # create recipes dataframe
-recipes_df = pd.DataFrame({'Key':range(1, len(recipe_list)+1,1), 'ingredients':recipe_list})
-#                                         ,'directions':directions_list}) 
+recipes_df = pd.DataFrame({'Key':range(1, len(recipe_list)+1,1), 'ingredients':recipe_list,
+                                         'directions':directions_list}) 
     
 recipes_df = recipes_df.rename(index=str, columns={"ingredients": "Terms"})
 
@@ -245,7 +245,6 @@ recipes_df = recipes_df[recipes_df.astype(str)['Terms'] != '[]']
 #recipes_df['Terms'] = recipes_df['Terms'].str.split()
 #
 recipe_vectors = doc_vectors(product_vectors, recipes_df)
-
 #
 # =============================================================================
 
@@ -316,7 +315,7 @@ for b in similar_recipes:
     print(b)
 #    print(recipes_df[df.Key==b].calories)
 #    print(recipes_df[df.Key==b].rating)
-    for ingredient in list(recipes_df[recipes_df.Key==b].directions):
+    for ingredient in list(recipes_df[recipes_df.Key==b].Terms):
         #w.similar_by_vector(vector, 5, search_k=-1, include_distances=False)
         print(ingredient)
         
