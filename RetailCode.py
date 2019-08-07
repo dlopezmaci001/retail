@@ -34,6 +34,7 @@ df['Terms'] = df['ingredients']
 
 # create calories and recipes lists
 recipe_list = list()
+directions_list = list()
 
 # Create individual lists for ingredients.
 for i in range(0,len(new_recipes)):
@@ -49,6 +50,7 @@ for i in range(0,len(new_recipes)):
         recipe = [re.sub(r'\s+', " ", w) for w in recipe]
         recipe = [x.lower() for x in recipe]
         recipe_list.append(recipe)
+        directions_list.append(new_recipes[i]['directions'])
     except:
         pass
     
@@ -206,15 +208,18 @@ there are available, in both of the recipes and products sold by the vendor
 # =============================================================================
 
 # create recipes dataframe
-recipes_df = pd.DataFrame({'Key':range(1, len(list_prods_in_recipes)+1,1), 'ingredients':list_prods_in_recipes})
+recipes_df = pd.DataFrame({'Key':range(1, len(recipe_list)+1,1), 'ingredients':recipe_list,
+                           'directions':directions_list})
+    
+recipes_df = recipes_df.rename(index=str, columns={"ingredients": "Terms"})
 
-# Separate all words with a ' ' space
-recipes_df['Terms']  = recipes_df['ingredients'].str.replace('\W', ' ')
-
-# Split products into terms: Tokenize.
-recipes_df['Terms'] = recipes_df['Terms'].str.split()
-
-recipe_vectors = doc_vectors(word_vectors, recipes_df)
+## Separate all words with a ' ' space
+#recipes_df['Terms']  = recipes_df['ingredients'].str.replace('\W', ' ')
+#
+## Split products into terms: Tokenize.
+#recipes_df['Terms'] = recipes_df['Terms'].str.split()
+#
+recipe_vectors = doc_vectors(product_vectors, recipes_df)
 #
 #for i in recipes_df['ingredients']:
 #    if i == 'cubes':
@@ -278,22 +283,22 @@ def basket_average(product_vectors, cart):
       
 cart_vector = basket_average(product_vectors, cart)
 
-display(cart)
-display(cart_vector)
+print(cart)
+print(cart_vector)
 
 #similar_products = u.get_nns_by_item(10, 10)
 similar_recipes = u.get_nns_by_vector(cart_vector, 5, search_k=-1, include_distances=False)
-display(similar_recipes)
+print(similar_recipes)
 
 # Find recipes
 
 #display(similar_baskets)
 for b in similar_recipes:
     print(b)
-    display(df[df.Key==b].calories)
-    display(df[df.Key==b].rating)
-    for ingredient in list(df[df.Key==b].directions):
+#    print(recipes_df[df.Key==b].calories)
+#    print(recipes_df[df.Key==b].rating)
+    for ingredient in list(recipes_df[recipes_df.Key==b].directions):
         #w.similar_by_vector(vector, 5, search_k=-1, include_distances=False)
         print(ingredient)
         
-a =df.loc[df['Key']==43850]
+
