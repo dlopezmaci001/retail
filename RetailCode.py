@@ -33,7 +33,7 @@ df = pd.DataFrame.from_dict(new_recipes, orient='columns')
 df['Key'] = range(1, len(df)+1,1)
 df['Terms'] = df['ingredients']
 
-# create calories and recipes lists
+# create directions and recipes lists
 recipe_list = list()
 directions_list = list()
 
