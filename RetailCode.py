@@ -338,13 +338,20 @@ print(np.mean(orders_df['days_since_prior_order']))
 # count group orders
 orders_count = orders_df['user_id'].value_counts().to_frame().reset_index().rename(index=str, columns={'user_id':'count'})
 print(orders_count[orders_count['count']>10]['index'].count())
+"""
+We group customers by id and count the number of transactions.
+We have a set of 206.209 unique customers, out of which nearly 50% have purchased
+more than 10 times.
+"""
 
 # Best customers
 
-orders_df[orders_df['user_id'].isin(orders_count[(orders_count['count']>30) & (orders_count['count']<32)]['index'])].count()
-
 orders_df_masked = orders_df[orders_df['user_id'].isin(orders_count[(orders_count['count']>10) & (orders_count['count']<15)]['index'])]
 print(np.mean(orders_df_masked['days_since_prior_order']))
+"""
+We define oir best customers as those who have purchased more than 10 times and less 
+than 15 since these are the ones with the highest growth potential
+"""
 
 print('Number of original orders: {:,}'.format(len(orders_df_masked.order_id.unique())))
 print('Number of original orders: {:,}'.format(len(orders_df.order_id.unique())))
@@ -354,29 +361,42 @@ print('Number of original orders: {:,}'.format(len(orders_df.order_id.unique()))
 orders_df_masked = orders_df_masked.groupby('user_id')['order_id'].apply(list)
 orders_df_masked = orders_df_masked.reset_index()#.head()
 orders_df_masked.head()
+"""
+We group all these best customers and group them by their order_id's
+"""
 
-# concatenate
+# Obtain all unique products
 order_ids = list()
 for order in orders_df_masked.order_id:
     order_ids +=order
+"""
+Obtain all the code for the unique id's that the customers have purchased
+"""    
 
-
+# Load the order id table where we have the id's of the products ordered
 order_products_prior = pd.read_csv("C:/Users/daniel.lopez/Documents/GitHub/retail/order_products__prior.csv")
 
 # Baskets 
-
 baskets = order_products_prior[order_products_prior['order_id'].isin(order_ids)]
-#Group 
+"""
+Obtain, from the order id's previously analysed all the details of that order,
+product id's etc.
+"""
 
+#Group order id's and product's ordered
 baskets_df_masked = baskets.groupby('order_id')['product_id'].apply(list)
-
-# View 
-baskets_df_masked.head()
+"""
+Now we have all the "tickets" all the products that were purchased together
+"""
 
 # Create dictionary
 product_id_pair=dict()
 for product in products.iterrows():
     product_id_pair[product[1].product_id] = product[1].product_name
+"""
+For all the product id's that we have in our lists, return the product name
+from the products table
+"""
 
 # create the basket vector    
 
@@ -391,7 +411,27 @@ for basket in baskets_df_masked.iteritems():
         except: print('you shall not pass')
         
     basket_vectors[basket[0]]=np.average(vector_list, axis=0)  
+"""
+Based on the products in each basket, generate the vector for that products 
+ordered.
+"""
         
+# User vector 
+#user_vectors = dict()
+#list_of_prods_analysed=list()
+#userid_list = list()
+#for user in orders_df_masked.iterrows(): 
+#    vector_list = list()
+#    for basket in user[1].order_id:# check what each customer has ordered
+#        try:
+#            vector_list.append(basket_vectors[basket])# for all the products ordered bring the vector generated in the dict
+#            list_of_prods_analysed.append(basket)
+#            userid_list.append(user[1].user_id)
+#            put = np.average(vector_list, axis=0) 
+#            user_vectors.update(user[1].user_id = put)
+#        except:
+#            pass
+
 # User vector 
 user_vectors = dict()
 for user in orders_df_masked.iterrows(): 
@@ -403,28 +443,46 @@ for user in orders_df_masked.iterrows():
             vector_list.append(basket_vectors[basket])
         except:
             pass
-    user_vectors[user[0]]=np.average(vector_list, axis=0)    
+#    user_vectors[user[0]]=np.average(vector_list, axis=0)
+    user_vectors[user[1].user_id] = np.average(vector_list, axis=0)        
+
+"""
+Here we check what the customers have ordered in every order by product id.
+We check these product id's against the dictionary and generate a vector 
+of the average values of the vector
+"""
     
 print(list(user_vectors.items())[:3])            
 
-
 # Recommender
 
-similar_recipes = u.get_nns_by_vector(user_vectors[5], 50, search_k=-1, include_distances=False)♣
+similar_recipes = u.get_nns_by_vector(user_vectors[1], 5, search_k=-1, include_distances=False)
 
-# looking for list of calories in recipes dataframe
+# looking for list of directions in recipes dataframe
 
-from collections import Counter
-list_directions = list()
-list_ingredients=list()
+list_directions_trial = list()
+list_ingredients_trial= list()
+list_user_id_trial = list()
+
 for b in similar_recipes:
-    list_directions.append(recipes_df[recipes_df.Key==b].iloc[0].directions)
-    list_ingredients.append(recipes_df[recipes_df.Key==b].iloc[0].Terms)
+    list_directions_trial.append(recipes_df[recipes_df.Key==b].iloc[0].directions)
+    list_ingredients_trial.append(recipes_df[recipes_df.Key==b].iloc[0].Terms)
+    list_user_id_trial.append(user_vectors.keys())
 
 # Create dataframe with ingredients and calories
-recipe_recommender = pd.DataFrame({'Recepe_Ingredients':list_ingredients,'Directions':list_directions})
+recipe_recommender_trial = pd.DataFrame({'Recipe_Ingredients':list_ingredients_trial,'Directions':list_directions_trial,'User_id':list_user_id_trial})
 
-# Order data using the min and max number of calories specified by the customer
-min_max=[250,500]
-recipe_recommender[recipe_recommender.Calories>min_max[0]][recipe_recommender.Calories<=min_max[1]].sort_values('Calories',ascending=False)
+# Generate recommendations for all the users 
+list_directions = list()
+list_ingredients=list()
+list_user_id = list()
 
+
+for i in orders_df_masked['user_id']:
+    similar_recipes = u.get_nns_by_vector(user_vectors[i], 5, search_k=-1, include_distances=False)
+    for b in similar_recipes:
+        list_directions.append(recipes_df[recipes_df.Key==b].iloc[0].directions)
+        list_ingredients.append(recipes_df[recipes_df.Key==b].iloc[0].Terms)
+        list_user_id.append(i)
+        
+recipe_recommender_all = pd.DataFrame({'Recipe_Ingredients':list_ingredients,'Directions':list_directions,'User_id':list_user_id})
