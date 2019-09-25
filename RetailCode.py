@@ -230,17 +230,17 @@ For each recipe we generate a vector based on the vectors of the products sold
 model = gensim.models.Word2Vec.load("word2vec_ingredients_products.model")
 
 # Find the most similar terms 
-model.wv.most_similar('oil',topn=5)
+model.wv.most_similar('wine',topn=5)
 
 # Similarity between 2 terms
 
-model.wv.similarity(w1='pasta',w2='penne')
+model.wv.similarity(w1='pasta',w2='tomato')
 
 ####################################################################################
 #                               Plot                                               #
 ####################################################################################
 
-keys = ['pasta','water','oil','chicken','beer','tomato','garlic']
+keys = ['pasta','water','oil','chicken','beer','tomato','clean']
 
 embedding_clusters = []
 word_clusters = []
