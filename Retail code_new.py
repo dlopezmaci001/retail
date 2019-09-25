@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Jul 12 16:55:45 2019
-
 ANALYTICS FOR RETAIL AND CONSUMER GOODS
 FINAL PROJECT
 TEAM: Beatriz Asenjo, Tamara Samman, Daniel Lopez, Rafael Bastardo
@@ -24,21 +23,23 @@ import json
 # CREATE RECIPES DATASET
 
 # import recipes. (https://www.kaggle.com/hugodarwood/epirecipes)
-with open('C:/Users/Daniel/Desktop/Retail/full_format_recipes.json') as json_data:
+with open('C:/Users/daniel.lopez/Documents/GitHub/retail/full_format_recipes.json') as json_data:
     new_recipes = json.load(json_data)
     json_data.close()
 
 # fill recipes dataframe
 keys = list(new_recipes[0].keys()) # get important keys
-col_names = list(['recipe_id','ingredients','calories'])
-
+col_names = list(['recipe_id','ingredients','calories','rating'])
+df = pd.DataFrame.from_dict(new_recipes, orient='columns')
 # create calories and recipes lists
 recipe_list = list()
 calories_list = list()
+rating_list = list()
+
 for i in range(0,len(new_recipes)):
     try:
         recipe = list(new_recipes[i]['ingredients'])
-        words_to_eliminate = ['cups','cup','spoon','spoons','teaspoon','teaspoons','tablespoon','tablespoons','pound','pounds','lb']
+        words_to_eliminate = ['']
         remove = '|'.join(words_to_eliminate)
         recipe = [re.compile(r'\b('+remove+r')\b', flags=re.IGNORECASE).sub("",w) for w in recipe]
         recipe = [re.sub(r'\([^)]*\)', "", w) for w in recipe]
@@ -49,17 +50,26 @@ for i in range(0,len(new_recipes)):
         try:
             calories_list.append(float(new_recipes[i]['calories']))
             recipe_list.append(recipe)
+            rating_list.append(float(new_recipes[i]['rating']))
+                                    
         except:
-            print('no calories in recipe')
+            pass
     except:
-        print('no ingredients in recipe')
-        
+        pass
+
 # create recipes dataframe
-recipes = pd.DataFrame({'recipe_id':range(1, len(recipe_list)+1,1),'calories':calories_list,
+df1 = pd.DataFrame({'recipe_id':range(1, len(recipe_list)+1,1),'calories':calories_list,
                         'ingredients':recipe_list})
+    
+df2 = pd.DataFrame({'rating':rating_list})    
+
+
+recipes = pd.concat([df1,df2], ignore_index=True, axis=1)
+
+recipes.columns = ['recipe_id','calories','ingredients','rating']
 
 # CREATE PRODUCTS DATAFRAME
-products = pd.read_csv("C:/Users/Daniel/Desktop/Retail/products.csv")
+products = pd.read_csv("C:/Users/daniel.lopez/Documents/GitHub/retail/products.csv")
 
 # Put into a list 
 product_list = list(products['product_name'])
@@ -123,13 +133,10 @@ def term_vectors(list_terms):
 
     """
     Returns a dictionary with term and its vector. 
-
     Parameters:
     argument1 (list): List of products in tokenized form. ex: [[chocolate, sandwich, cookies],[...], ...]
-
     Returns:
     dict:Vectors
-
     """
     
     w2vec_model = Word2Vec(list_terms, size=20, window=5, min_count=1, workers=4)
@@ -152,13 +159,10 @@ def doc_vectors(word_dict,  doc_df):
 
     """
     Returns a dictionary with document and its vector. 
-
     Parameters:
     argument1 (list): List of products in tokenized form. ex: [[chocolate, sandwich, cookies],[...], ...]
-
     Returns:
     dict:Vectors
-
     """
     
     doc_w2vec = dict()
@@ -224,7 +228,7 @@ products[products['product_name'].str.contains(" oil ")]
 
 # Create a ficticious cart 
 
-cart = ['apple', 'oil', "flour"]
+cart = ['apple', 'chicken']
 
 #cart_vector = doclist_2_vector(product_vectors, cart)
 
@@ -250,6 +254,7 @@ display(similar_recipes)
 #display(similar_baskets)
 for b in similar_recipes:
     display(recipes_table[recipes_table.Key==b].calories)
+    display(recipes_table[recipes_table.Key==b].rating)
     for ingredient in list(recipes_table[recipes_table.Key==b].Terms):
         #w.similar_by_vector(vector, 5, search_k=-1, include_distances=False)
         print(ingredient)
@@ -363,4 +368,3 @@ recipe_recommender = pd.DataFrame({'Recepe_Ingredients':list_ingredients,'Calori
 # Order data using the min and max number of calories specified by the customer
 min_max=[250,500]
 recipe_recommender[recipe_recommender.Calories>min_max[0]][recipe_recommender.Calories<=min_max[1]].sort_values('Calories',ascending=False)
-
